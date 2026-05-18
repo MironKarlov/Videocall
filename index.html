@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Видеочат — работающая версия</title>
+    <title>Видеочат — просто</title>
     <style>
         body { font-family: system-ui; background: #000; color: white; padding: 20px; text-align: center; }
         button { background: #3b82f6; padding: 15px 30px; font-size: 18px; border: none; border-radius: 50px; color: white; margin: 10px; width: 90%; }
-        textarea { width: 95%; height: 120px; background: #222; color: #0f0; font-family: monospace; font-size: 12px; padding: 10px; border-radius: 10px; margin: 10px 0; }
+        textarea { width: 95%; height: 100px; background: #222; color: #0f0; font-family: monospace; font-size: 11px; padding: 10px; border-radius: 10px; margin: 10px 0; }
         input { width: 90%; padding: 12px; font-size: 16px; border-radius: 50px; border: none; margin: 10px 0; text-align: center; }
         video { width: 100%; border-radius: 20px; margin-top: 10px; background: #111; }
-        .box { background: #222; padding: 15px; border-radius: 20px; margin: 15px 0; text-align: left; }
-        .green { background: #1a5f1a; padding: 10px; border-radius: 10px; text-align: center; }
-        .row { display: flex; gap: 10px; align-items: center; }
+        .box { background: #222; padding: 15px; border-radius: 20px; margin: 15px 0; }
+        .green { background: #1a5f1a; }
+        .red { background: #8b0000; }
     </style>
 </head>
 <body>
@@ -22,28 +22,28 @@
 <div class="box">
     <p>🔵 <strong>ВАШ IP ИЗ НАСТРОЕК Wi-Fi</strong></p>
     <input type="text" id="myIp" placeholder="Например: 192.168.1.45">
-    <button id="saveIp">✅ СОХРАНИТЬ IP</button>
+    <button id="saveIpBtn">✅ СОХРАНИТЬ</button>
 </div>
 
-<div class="box">
-    <p style="color:#0f0">🟢 <strong>ЕСЛИ ВЫ ЗВОНИТЕ (ДРУГ)</strong></p>
-    <button id="callBtn">📞 ПОЗВОНИТЬ ДРУГУ</button>
-    <div id="codeArea" style="display:none">
-        <p>📤 <strong>Отправьте этот код другу:</strong></p>
-        <textarea id="codeToSend" readonly></textarea>
-        <button id="copyCodeBtn">📋 КОПИРОВАТЬ КОД</button>
+<div class="box" id="hostBox">
+    <p style="color:#0f0">👑 <strong>ХОСТ (кого смотрят)</strong></p>
+    <button id="createRoomBtn">🏠 СОЗДАТЬ КОМНАТУ</button>
+    <div id="hostCodeArea" style="display:none">
+        <p>📤 <strong>ОТПРАВЬТЕ ЭТОТ КОД ДРУГУ:</strong></p>
+        <textarea id="hostCode" readonly></textarea>
+        <button id="copyHostCodeBtn">📋 КОПИРОВАТЬ</button>
     </div>
 </div>
 
-<div class="box">
-    <p style="color:#ff0">🟡 <strong>ЕСЛИ ВАМ ЗВОНЯТ (ХОСТ)</strong></p>
-    <textarea id="codeFromFriend" placeholder="Вставьте сюда код, который прислал друг..."></textarea>
-    <button id="acceptCallBtn">✅ ПРИНЯТЬ ЗВОНОК И ВСТАВИТЬ КОД</button>
+<div class="box" id="guestBox">
+    <p style="color:#ff0">👤 <strong>ДРУГ (кто смотрит)</strong></p>
+    <textarea id="guestCodeInput" placeholder="Вставьте сюда код от хоста..."></textarea>
+    <button id="connectBtn">🔗 ПОДКЛЮЧИТЬСЯ</button>
 </div>
 
 <div id="callArea" style="display:none">
     <div class="box">
-        <p>👤 <strong>ВИДЕО ДРУГА</strong></p>
+        <p>👤 <strong>ВИДЕО СОБЕСЕДНИКА</strong></p>
         <video id="remoteVideo" autoplay playsinline></video>
     </div>
     <div class="box">
@@ -58,7 +58,8 @@
 <script>
     let localStream = null;
     let pc = null;
-    let mySavedIp = null;
+    let myIp = null;
+    let currentOffer = null;
 
     function status(msg, color = '#ffaa00') {
         const div = document.getElementById('status');
@@ -66,17 +67,15 @@
         div.style.background = color;
     }
 
-    // Сохранить свой IP
-    document.getElementById('saveIp').onclick = () => {
-        mySavedIp = document.getElementById('myIp').value.trim();
-        if (mySavedIp) {
-            status('✅ Ваш IP: ' + mySavedIp + ' — скажите его другу', '#1a5f1a');
+    document.getElementById('saveIpBtn').onclick = () => {
+        myIp = document.getElementById('myIp').value.trim();
+        if (myIp) {
+            status('✅ IP сохранён: ' + myIp, '#1a5f1a');
         } else {
             status('❌ Введите IP из настроек Wi-Fi', '#8b0000');
         }
     };
 
-    // Запуск камеры
     async function startCamera() {
         try {
             if (localStream) localStream.getTracks().forEach(t => t.stop());
@@ -89,14 +88,14 @@
         }
     }
 
-    // === ДРУГ (тот, кто звонит) ===
-    document.getElementById('callBtn').onclick = async () => {
-        if (!mySavedIp) {
+    // === ХОСТ: СОЗДАТЬ КОМНАТУ ===
+    document.getElementById('createRoomBtn').onclick = async () => {
+        if (!myIp) {
             status('❌ Сначала сохраните ваш IP', '#8b0000');
             return;
         }
 
-        status('🎥 Включаю камеру...', '#ffaa00');
+        status('🎥 Создаю комнату, включаю камеру...', '#ffaa00');
         const ok = await startCamera();
         if (!ok) return;
 
@@ -113,27 +112,26 @@
         await pc.setLocalDescription(offer);
         
         const offerCode = JSON.stringify(offer);
-        document.getElementById('codeToSend').value = offerCode;
-        document.getElementById('codeArea').style.display = 'block';
-        status('📤 Код создан! Отправьте его другу (хосту)', '#1a5f1a');
+        document.getElementById('hostCode').value = offerCode;
+        document.getElementById('hostCodeArea').style.display = 'block';
+        status('📤 Код создан! Отправьте его другу', '#1a5f1a');
     };
 
-    // Копировать код
-    document.getElementById('copyCodeBtn').onclick = () => {
-        const code = document.getElementById('codeToSend').value;
+    document.getElementById('copyHostCodeBtn').onclick = () => {
+        const code = document.getElementById('hostCode').value;
         navigator.clipboard.writeText(code);
-        status('✅ Код скопирован! Отправьте его другу', '#1a5f1a');
+        status('✅ Код скопирован! Отправьте другу', '#1a5f1a');
     };
 
-    // === ХОСТ (тот, кому звонят) ===
-    document.getElementById('acceptCallBtn').onclick = async () => {
-        const code = document.getElementById('codeFromFriend').value.trim();
+    // === ДРУГ: ПОДКЛЮЧИТЬСЯ ===
+    document.getElementById('connectBtn').onclick = async () => {
+        const code = document.getElementById('guestCodeInput').value.trim();
         if (!code) {
-            status('❌ Вставьте код от друга', '#8b0000');
+            status('❌ Вставьте код от хоста', '#8b0000');
             return;
         }
         
-        if (!mySavedIp) {
+        if (!myIp) {
             status('❌ Сначала сохраните ваш IP', '#8b0000');
             return;
         }
@@ -159,21 +157,20 @@
             
             const answerCode = JSON.stringify(answer);
             
-            // Показываем ответ, который нужно отправить другу
-            const userAnswer = prompt('📥 Отправьте этот код другу (скопируйте и отправьте):\n\n' + answerCode);
+            // Показываем ответ, который нужно отправить хосту
+            prompt('📥 Скопируйте этот код и отправьте ХОСТУ (вставьте в чат):\n\n' + answerCode);
             
-            status('✅ Ответ отправлен другу, ожидаем видео...', '#1a5f1a');
+            status('✅ Код отправлен хосту, ожидаем видео...', '#1a5f1a');
         } catch(e) {
-            status('❌ Ошибка: неверный код от друга. Попросите скопировать заново', '#8b0000');
+            status('❌ Неверный код. Попросите хоста скопировать код заново', '#8b0000');
         }
     };
 
-    // Завершить звонок
     document.getElementById('endBtn').onclick = () => {
         if (pc) pc.close();
         if (localStream) localStream.getTracks().forEach(t => t.stop());
         document.getElementById('callArea').style.display = 'none';
-        document.getElementById('codeArea').style.display = 'none';
+        document.getElementById('hostCodeArea').style.display = 'none';
         status('📴 Звонок завершён', '#333');
     };
 </script>
