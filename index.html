@@ -2,13 +2,16 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Видеочат по Wi-Fi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Видеочат по Wi-Fi — локальный IP</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
-            font-family: system-ui, sans-serif;
-            background: #1a1a2e;
-            color: white;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: #0f172a;
+            color: #f1f5f9;
             margin: 0;
             padding: 20px;
         }
@@ -16,432 +19,430 @@
             max-width: 600px;
             margin: 0 auto;
         }
-        video {
-            width: 100%;
-            border-radius: 16px;
-            background: #000;
-            margin-top: 10px;
-        }
-        button {
-            background: #0f6bff;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 30px;
-            font-size: 16px;
-            margin: 10px 5px;
-            cursor: pointer;
-        }
-        input {
-            padding: 12px;
-            border-radius: 30px;
-            border: none;
-            width: 70%;
-            font-size: 16px;
-            margin: 10px 0;
-        }
         .card {
-            background: #2a2a3e;
+            background: #1e293b;
+            border-radius: 32px;
             padding: 20px;
-            border-radius: 24px;
             margin-bottom: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
         }
         .ip-box {
-            background: #0f0f1a;
-            padding: 15px;
-            border-radius: 16px;
+            background: #0f172a;
+            padding: 16px;
+            border-radius: 20px;
             font-family: monospace;
-            font-size: 18px;
-            word-break: break-all;
+            font-size: 20px;
+            font-weight: bold;
             text-align: center;
+            letter-spacing: 1px;
+            word-break: break-all;
+            margin: 12px 0;
+            border: 1px solid #334155;
+        }
+        button {
+            background: #3b82f6;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 40px;
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+            margin: 8px 6px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: inherit;
+        }
+        button:active {
+            transform: scale(0.97);
+        }
+        .btn-danger {
+            background: #dc2626;
+        }
+        .btn-success {
+            background: #10b981;
+        }
+        input {
+            padding: 14px 18px;
+            border-radius: 48px;
+            border: none;
+            width: 100%;
+            font-size: 16px;
+            margin: 10px 0;
+            background: #334155;
+            color: white;
+            font-family: monospace;
+        }
+        input::placeholder {
+            color: #94a3b8;
+        }
+        video {
+            width: 100%;
+            border-radius: 24px;
+            background: #000;
+            margin-top: 12px;
+            transform: scaleX(-1);
         }
         .status {
-            padding: 10px;
-            border-radius: 12px;
-            margin: 10px 0;
-        }
-        .connected { background: #0a5a2a; }
-        .waiting { background: #5a4a0a; }
-        .error { background: #8a2a2a; }
-        .step {
-            background: #3a3a5e;
-            padding: 10px;
-            border-radius: 12px;
-            margin: 10px 0;
+            padding: 12px 16px;
+            border-radius: 24px;
+            margin-top: 12px;
             font-size: 14px;
+            background: #334155;
+        }
+        .status.connected {
+            background: #065f46;
+        }
+        .status.error {
+            background: #991b1b;
+        }
+        .status.waiting {
+            background: #854d0e;
+        }
+        .flex {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        h2, h3 {
+            margin-top: 0;
+        }
+        hr {
+            border-color: #334155;
+            margin: 20px 0;
+        }
+        .step {
+            background: #0f172a;
+            padding: 14px;
+            border-radius: 20px;
+            font-size: 14px;
+            margin-top: 12px;
+            border-left: 4px solid #3b82f6;
         }
     </style>
 </head>
 <body>
 <div class="container">
-    <h2>📹 Видеочат по Wi-Fi</h2>
-    
+    <h2>📡 Видеочат по Wi-Fi</h2>
+
     <div class="card">
-        <h3>📡 Ваш IP адрес (скажите другу)</h3>
-        <div class="ip-box" id="ipAddress">Определяется...</div>
-        <button id="copyBtn">📋 Скопировать IP</button>
+        <h3>📍 Мой локальный IP (192.168.x.x)</h3>
+        <div class="ip-box" id="localIpDisplay">— не определён —</div>
+        <div class="flex">
+            <button id="showIpBtn">🔍 Показать локальный IP</button>
+            <button id="copyIpBtn" disabled>📋 Скопировать IP</button>
+        </div>
+        <div class="step">
+            💡 <strong>Важно:</strong> IP должен начинаться на <strong>192.168.</strong> , <strong>10.</strong> или <strong>172.16-31.</strong><br>
+            Если показывает другой IP (46.x.x.x) — это внешний адрес, он не подойдёт. Нажмите кнопку выше, чтобы найти правильный.
+        </div>
     </div>
-    
+
     <div class="card">
         <h3>🔌 Подключиться к другу</h3>
-        <input type="text" id="friendIP" placeholder="Введите IP хоста (например: 192.168.1.5)">
-        <button id="connectBtn">🔗 Подключиться и начать звонок</button>
+        <input type="text" id="friendIpInput" placeholder="Введите локальный IP друга (например 192.168.1.45)">
+        <button id="connectBtn" class="btn-success">🚀 Подключиться и начать звонок</button>
+        <div id="statusMsg" class="status waiting">⚡ Ожидание действия</div>
     </div>
-    
-    <div id="callPanel" style="display:none">
+
+    <div id="callPanel" style="display:none;">
         <div class="card">
-            <h3>📺 Видео собеседника</h3>
+            <h3>👤 Видео друга</h3>
             <video id="remoteVideo" autoplay playsinline></video>
         </div>
         <div class="card">
-            <h3>🎥 Моя камера</h3>
+            <h3>🤳 Моя камера</h3>
             <video id="localVideo" autoplay playsinline muted></video>
-            <button id="toggleCameraBtn">🔄 Переключить камеру</button>
-            <button id="hangupBtn" style="background:#c03939">📞 Завершить звонок</button>
+            <div class="flex">
+                <button id="toggleCameraBtn">🔄 Переключить камеру</button>
+                <button id="hangupBtn" class="btn-danger">❌ Завершить звонок</button>
+            </div>
         </div>
     </div>
     
-    <div id="statusMsg" class="status waiting">⚪ Готов к работе. Покажите свой IP другу.</div>
     <div class="step">
-        📖 <strong>Инструкция:</strong><br>
-        1. Оба телефона откройте эту страницу<br>
-        2. Тот, у кого IP <strong>не начинается на 169.</strong> — будет хостом<br>
-        3. Хост даёт свой IP другу<br>
-        4. Друг вводит IP хоста и нажимает "Подключиться"<br>
-        5. Готово! Видео появится на обоих телефонах
+        📖 <strong>Инструкция (прочитайте вместе с другом):</strong><br>
+        1️⃣ Оба телефона подключитесь к <strong>одному Wi-Fi</strong><br>
+        2️⃣ Каждый нажимает «Показать локальный IP» → появляется адрес вида 192.168.x.x<br>
+        3️⃣ Тот, кто будет <strong>ХОСТОМ</strong> (принимает звонок) диктует свой IP другу<br>
+        4️⃣ Друг вводит IP хоста в поле и нажимает «Подключиться»<br>
+        5️⃣ Друг копирует появившийся код и отправляет хосту (через мессенджер или голосом)<br>
+        6️⃣ Хост вставляет код и нажимает OK → видео появится у обоих! 🎉
     </div>
 </div>
 
 <script>
-    // === Глобальные переменные ===
+    // === ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ===
     let localStream = null;
     let peerConnection = null;
     let currentCamera = 'user';
     let isCallActive = false;
-    
+    let myLocalIp = null;
+
     const statusDiv = document.getElementById('statusMsg');
-    
+    const localIpDisplay = document.getElementById('localIpDisplay');
+    const copyIpBtn = document.getElementById('copyIpBtn');
+    const showIpBtn = document.getElementById('showIpBtn');
+    const connectBtn = document.getElementById('connectBtn');
+    const friendIpInput = document.getElementById('friendIpInput');
+    const callPanel = document.getElementById('callPanel');
+    const remoteVideo = document.getElementById('remoteVideo');
+    const localVideo = document.getElementById('localVideo');
+    const toggleCameraBtn = document.getElementById('toggleCameraBtn');
+    const hangupBtn = document.getElementById('hangupBtn');
+
     function setStatus(text, type = 'waiting') {
         statusDiv.textContent = text;
         statusDiv.className = `status ${type}`;
     }
-    
-    // === ПОЛУЧЕНИЕ РЕАЛЬНОГО IP ЧЕРЕЗ API ===
-    async function getRealIP() {
-        // Способ 1: Через бесплатный сервис (работает и в Wi-Fi)
-        try {
-            // Пробуем получить IP через STUN запрос
-            const response = await fetch('https://api.ipify.org?format=json');
-            const data = await response.json();
-            return data.ip;
-        } catch(e) {
-            console.log('api.ipify.org не работает, пробуем другой...');
-        }
-        
-        // Способ 2: Через другой сервис
-        try {
-            const response = await fetch('https://api.my-ip.io/ip.json');
-            const data = await response.json();
-            return data.ip;
-        } catch(e) {
-            console.log('my-ip.io не работает');
-        }
-        
-        // Способ 3: Локальный IP через WebRTC (если разрешено)
-        return await getLocalIPViaWebRTC();
-    }
-    
-    function getLocalIPViaWebRTC() {
+
+    // === ОПРЕДЕЛЕНИЕ ЛОКАЛЬНОГО IP (192.168.x.x / 10.x.x.x / 172.16-31.x.x) ===
+    function getLocalIP() {
         return new Promise((resolve) => {
-            const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+            const pc = new RTCPeerConnection({ iceServers: [] });
             pc.createDataChannel('');
             pc.createOffer()
                 .then(offer => pc.setLocalDescription(offer))
                 .catch(() => {});
             
+            let found = false;
             pc.onicecandidate = (e) => {
-                if (e.candidate) {
-                    const ipMatch = e.candidate.candidate.match(/([0-9]{1,3}\.){3}[0-9]{1,3}/);
-                    if (ipMatch) {
-                        const ip = ipMatch[0];
-                        if (!ip.startsWith('127.') && !ip.startsWith('169.') && ip.split('.').length === 4) {
-                            pc.close();
-                            resolve(ip);
-                        }
+                if (!e.candidate || found) return;
+                const candidate = e.candidate.candidate;
+                const ipMatch = candidate.match(/([0-9]{1,3}\.){3}[0-9]{1,3}/);
+                if (ipMatch) {
+                    const ip = ipMatch[0];
+                    // Проверяем, что это локальный IP (не 127.0.0.1 и не 169.254.x.x и не внешний 46.x)
+                    const isLocal = (ip.startsWith('192.168.') || 
+                                    ip.startsWith('10.') || 
+                                    (ip.startsWith('172.') && parseInt(ip.split('.')[1]) >= 16 && parseInt(ip.split('.')[1]) <= 31));
+                    if (isLocal && !ip.startsWith('127.')) {
+                        found = true;
+                        pc.close();
+                        resolve(ip);
                     }
                 }
             };
-            
             setTimeout(() => {
-                pc.close();
-                // Если не получили IP, показываем инструкцию
-                resolve('❌ Не удалось определить IP. Убедитесь, что оба телефона в одной Wi-Fi сети и перезагрузите страницу.');
+                if (!found) {
+                    pc.close();
+                    resolve(null);
+                }
             }, 2000);
         });
     }
-    
+
+    // === ПОКАЗАТЬ ЛОКАЛЬНЫЙ IP ПО КНОПКЕ ===
+    async function showMyLocalIP() {
+        setStatus('🔍 Определяю локальный IP...', 'waiting');
+        const ip = await getLocalIP();
+        if (ip) {
+            myLocalIp = ip;
+            localIpDisplay.innerHTML = ip;
+            copyIpBtn.disabled = false;
+            setStatus(`✅ Локальный IP: ${ip}. Скажите его другу (если вы хост).`, 'connected');
+        } else {
+            localIpDisplay.innerHTML = '❌ Не найден (проверьте Wi-Fi)';
+            copyIpBtn.disabled = true;
+            setStatus('⚠️ Не удалось найти локальный IP. Убедитесь, что оба телефона в одной Wi-Fi сети.', 'error');
+        }
+    }
+
+    // === КОПИРОВАТЬ IP ===
+    function copyLocalIP() {
+        if (myLocalIp) {
+            navigator.clipboard.writeText(myLocalIp);
+            setStatus(`📋 IP ${myLocalIp} скопирован!`, 'connected');
+        } else {
+            setStatus('❌ Нет IP для копирования. Нажмите "Показать локальный IP" сначала.', 'error');
+        }
+    }
+
     // === ЗАПУСК КАМЕРЫ ===
     async function startLocalCamera() {
         try {
             if (localStream) {
                 localStream.getTracks().forEach(track => track.stop());
             }
-            localStream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: currentCamera }, 
-                audio: false 
+            localStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: currentCamera },
+                audio: false
             });
-            const localVideo = document.getElementById('localVideo');
-            if (localVideo) {
-                localVideo.srcObject = localStream;
-            }
+            if (localVideo) localVideo.srcObject = localStream;
             return true;
-        } catch(e) {
-            setStatus('❌ Ошибка камеры: ' + e.message, 'error');
+        } catch (err) {
+            setStatus('❌ Ошибка камеры: ' + err.message, 'error');
             return false;
         }
     }
-    
-    // === ПОДКЛЮЧЕНИЕ К СОБЕСЕДНИКУ (ДРУГ) ===
-    async function connectToFriend(hostIP) {
-        if (isCallActive) {
-            setStatus('Звонок уже активен', 'error');
+
+    // === ФУНКЦИЯ ДЛЯ ХОСТА (принимает входящий звонок) ===
+    async function runAsHost() {
+        setStatus('🎥 Режим хоста: запускаю камеру и жду код от друга...', 'waiting');
+        const cameraOk = await startLocalCamera();
+        if (!cameraOk) return;
+
+        const configuration = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        };
+        peerConnection = new RTCPeerConnection(configuration);
+
+        if (localStream) {
+            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+        }
+
+        peerConnection.ontrack = (event) => {
+            remoteVideo.srcObject = event.streams[0];
+            callPanel.style.display = 'block';
+            setStatus('✅ Видео соединение активно!', 'connected');
+            isCallActive = true;
+        };
+
+        peerConnection.onconnectionstatechange = () => {
+            if (peerConnection.connectionState === 'failed') {
+                setStatus('❌ Соединение разорвано', 'error');
+            } else if (peerConnection.connectionState === 'connected') {
+                setStatus('✅ Соединение установлено', 'connected');
+            }
+        };
+
+        // Ждём офер от друга (через prompt)
+        const offerFromFriend = prompt('📲 Вставьте сюда код, который прислал друг (после того как он нажал "Подключиться"):');
+        if (!offerFromFriend) {
+            setStatus('❌ Отменено: нет кода от друга', 'error');
             return;
         }
-        
-        setStatus(`🔍 Подключаемся к ${hostIP}...`, 'waiting');
-        
-        // Запускаем камеру
-        const cameraStarted = await startLocalCamera();
-        if (!cameraStarted) return;
-        
-        // Создаём PeerConnection
+
+        try {
+            const offer = JSON.parse(offerFromFriend);
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+
+            // Отдаём ответ другу
+            const answerStr = JSON.stringify(answer);
+            prompt('📤 Скопируйте этот код и отправьте другу:', answerStr);
+            setStatus('✅ Ответ отправлен другу, ожидаем видео...', 'connected');
+        } catch (err) {
+            setStatus('❌ Ошибка при обработке кода: ' + err.message, 'error');
+        }
+    }
+
+    // === ПОДКЛЮЧЕНИЕ К ДРУГУ (друг звонит хосту) ===
+    async function connectToFriend(hostIP) {
+        setStatus(`🔌 Подключаюсь к ${hostIP}...`, 'waiting');
+        const cameraOk = await startLocalCamera();
+        if (!cameraOk) return;
+
         const configuration = {
             iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' }
             ]
         };
-        
         peerConnection = new RTCPeerConnection(configuration);
-        
-        // Добавляем треки камеры
+
         if (localStream) {
-            localStream.getTracks().forEach(track => {
-                peerConnection.addTrack(track, localStream);
-            });
+            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
         }
-        
-        // Принимаем видео от хоста
+
         peerConnection.ontrack = (event) => {
-            const remoteVideo = document.getElementById('remoteVideo');
-            if (remoteVideo) {
-                remoteVideo.srcObject = event.streams[0];
-                document.getElementById('callPanel').style.display = 'block';
-                setStatus('✅ Видео соединение установлено!', 'connected');
-                isCallActive = true;
-            }
+            remoteVideo.srcObject = event.streams[0];
+            callPanel.style.display = 'block';
+            setStatus('✅ Видео получено!', 'connected');
+            isCallActive = true;
         };
-        
-        peerConnection.onicecandidate = (event) => {
-            if (event.candidate) {
-                console.log('ICE кандидат:', event.candidate);
-            }
-        };
-        
+
         peerConnection.onconnectionstatechange = () => {
-            console.log('Connection state:', peerConnection.connectionState);
             if (peerConnection.connectionState === 'failed') {
-                setStatus('❌ Соединение не удалось. Проверьте, что оба телефона в одной Wi-Fi сети и IP правильный.', 'error');
+                setStatus('❌ Соединение не удалось. Проверьте IP и Wi-Fi.', 'error');
             } else if (peerConnection.connectionState === 'connected') {
-                setStatus('✅ Соединение установлено!', 'connected');
+                setStatus('✅ Соединение по видео активно', 'connected');
             }
         };
-        
+
         try {
-            // Создаём офер (предложение)
             const offer = await peerConnection.createOffer();
             await peerConnection.setLocalDescription(offer);
+            const offerStr = JSON.stringify(offer);
+
+            // Отправляем офер хосту через prompt
+            const answerFromHost = prompt(`📤 Отправьте этот код хосту (через мессенджер или голосом):\n\n${offerStr}\n\nПосле отправки вставьте ответ от хоста:`);
             
-            // Отправляем офер хосту через HTTP запрос (если на хосте запущен сервер)
-            // Упрощённый вариант: создаём ссылку с данными
-            const offerData = encodeURIComponent(JSON.stringify(offer));
-            const linkForHost = `https://${hostIP}:8080/?offer=${offerData}`;
-            
-            setStatus(`📤 Отправляю запрос на ${hostIP}...`, 'waiting');
-            
-            // Пытаемся отправить офер напрямую на хост
-            try {
-                const response = await fetch(`http://${hostIP}:8080/offer`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ offer: offer })
-                });
-                const data = await response.json();
-                if (data.answer) {
-                    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-                    setStatus('✅ Соединение установлено!', 'connected');
-                    document.getElementById('callPanel').style.display = 'block';
-                    isCallActive = true;
-                }
-            } catch(e) {
-                // Если прямой запрос не работает, показываем ручной способ
-                setStatus('⚠️ Нужен ручной обмен. Скопируйте текст ниже и отправьте другу:', 'waiting');
-                
-                const offerStr = JSON.stringify(offer);
-                const answerFromHost = prompt('Отправьте этот код другу (хосту), затем вставьте его ответ:\n\n' + offerStr + '\n\n(Друг должен нажать "Создать лобби" и вставить этот код)');
-                
-                if (answerFromHost) {
-                    try {
-                        const answer = JSON.parse(answerFromHost);
-                        await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-                        setStatus('✅ Соединение установлено!', 'connected');
-                        document.getElementById('callPanel').style.display = 'block';
-                        isCallActive = true;
-                    } catch(e) {
-                        setStatus('❌ Неверный ответ от друга', 'error');
-                    }
-                }
-            }
-            
-        } catch(e) {
-            setStatus('❌ Ошибка: ' + e.message, 'error');
-        }
-    }
-    
-    // === СОЗДАНИЕ ЛОББИ (ХОСТ) - принимает входящие звонки ===
-    async function createHost() {
-        setStatus('🎥 Создаю лобби...', 'waiting');
-        
-        // Запускаем камеру
-        const cameraStarted = await startLocalCamera();
-        if (!cameraStarted) return;
-        
-        // Создаём PeerConnection
-        const configuration = {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' }
-            ]
-        };
-        
-        peerConnection = new RTCPeerConnection(configuration);
-        
-        // Добавляем треки камеры
-        if (localStream) {
-            localStream.getTracks().forEach(track => {
-                peerConnection.addTrack(track, localStream);
-            });
-        }
-        
-        // Принимаем видео от друга
-        peerConnection.ontrack = (event) => {
-            const remoteVideo = document.getElementById('remoteVideo');
-            if (remoteVideo) {
-                remoteVideo.srcObject = event.streams[0];
-                document.getElementById('callPanel').style.display = 'block';
-                setStatus('✅ Видео соединение установлено!', 'connected');
-                isCallActive = true;
-            }
-        };
-        
-        peerConnection.onicecandidate = (event) => {
-            if (event.candidate) {
-                console.log('ICE кандидат:', event.candidate);
-            }
-        };
-        
-        setStatus('📡 Ожидаю подключения друга... Он должен ввести ваш IP и нажать "Подключиться"', 'connected');
-        
-        // Проверяем входящие оферы через prompt
-        const offerFromFriend = prompt('Ожидание подключения. Когда друг нажмёт "Подключиться", он получит код. Вставьте этот код сюда:');
-        
-        if (offerFromFriend) {
-            try {
-                const offer = JSON.parse(offerFromFriend);
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-                const answer = await peerConnection.createAnswer();
-                await peerConnection.setLocalDescription(answer);
-                
-                // Отправляем ответ другу
-                prompt('Скопируйте этот код и отправьте другу:', JSON.stringify(answer));
-                setStatus('✅ Ответ отправлен, ожидаю видео...', 'connected');
-            } catch(e) {
-                setStatus('❌ Ошибка: ' + e.message, 'error');
-            }
-        }
-    }
-    
-    // === ИНИЦИАЛИЗАЦИЯ ===
-    async function init() {
-        // Показываем IP
-        const ip = await getRealIP();
-        document.getElementById('ipAddress').innerHTML = ip;
-        
-        if (ip.startsWith('❌')) {
-            setStatus('⚠️ ' + ip + ' Попробуйте определить IP вручную: на телефоне Зайти в Настройки → О телефоне → IP-адрес', 'error');
-        } else {
-            setStatus(`✅ Ваш IP: ${ip}. Покажите его другу. Друг введёт этот IP и нажмёт "Подключиться"`, 'connected');
-        }
-        
-        // Кнопка копирования
-        document.getElementById('copyBtn').onclick = () => {
-            const ipText = document.getElementById('ipAddress').innerText;
-            navigator.clipboard.writeText(ipText);
-            setStatus('✅ IP скопирован!', 'connected');
-        };
-        
-        // Кнопка подключения
-        document.getElementById('connectBtn').onclick = async () => {
-            const friendIP = document.getElementById('friendIP').value;
-            if (!friendIP) {
-                setStatus('❌ Введите IP хоста', 'error');
-                return;
-            }
-            
-            // Проверяем, не совпадает ли IP с нашим
-            const myIP = document.getElementById('ipAddress').innerText;
-            if (friendIP === myIP) {
-                // Если IP совпадает, значит этот телефон - хост
-                await createHost();
+            if (answerFromHost) {
+                const answer = JSON.parse(answerFromHost);
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+                setStatus('✅ Соединение устанавливается...', 'connected');
             } else {
-                await connectToFriend(friendIP);
+                throw new Error('Нет ответа от хоста');
             }
-        };
-        
-        // Переключение камеры
-        document.getElementById('toggleCameraBtn')?.addEventListener('click', async () => {
-            currentCamera = currentCamera === 'user' ? 'environment' : 'user';
-            await startLocalCamera();
-            
-            if (peerConnection && localStream) {
-                const senders = peerConnection.getSenders();
-                const videoSender = senders.find(s => s.track?.kind === 'video');
-                if (videoSender) {
-                    videoSender.replaceTrack(localStream.getVideoTracks()[0]);
-                }
-            }
-        });
-        
-        // Завершение звонка
-        document.getElementById('hangupBtn')?.addEventListener('click', () => {
-            if (peerConnection) {
-                peerConnection.close();
-                peerConnection = null;
-            }
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-                localStream = null;
-            }
-            document.getElementById('callPanel').style.display = 'none';
-            document.getElementById('remoteVideo').srcObject = null;
-            document.getElementById('localVideo').srcObject = null;
-            isCallActive = false;
-            setStatus('📞 Звонок завершён', 'waiting');
-        });
+        } catch (err) {
+            setStatus('❌ Ошибка: ' + err.message, 'error');
+        }
     }
-    
-    // Запускаем
-    init();
+
+    // === ОБРАБОТЧИК ГЛАВНОЙ КНОПКИ "ПОДКЛЮЧИТЬСЯ" ===
+    async function onConnectClick() {
+        if (isCallActive) {
+            setStatus('⚠️ Звонок уже активен. Завершите текущий.', 'error');
+            return;
+        }
+        const targetIp = friendIpInput.value.trim();
+        if (!targetIp) {
+            setStatus('❌ Введите IP друга', 'error');
+            return;
+        }
+
+        // Простая проверка: если введённый IP совпадает с нашим локальным — включаем режим хоста
+        if (myLocalIp && targetIp === myLocalIp) {
+            await runAsHost();
+        } else {
+            await connectToFriend(targetIp);
+        }
+    }
+
+    // === ПЕРЕКЛЮЧЕНИЕ КАМЕРЫ ===
+    async function toggleCamera() {
+        currentCamera = currentCamera === 'user' ? 'environment' : 'user';
+        await startLocalCamera();
+        if (peerConnection && localStream) {
+            const senders = peerConnection.getSenders();
+            const videoSender = senders.find(s => s.track?.kind === 'video');
+            if (videoSender) {
+                videoSender.replaceTrack(localStream.getVideoTracks()[0]);
+            }
+        }
+    }
+
+    // === ЗАВЕРШЕНИЕ ЗВОНКА ===
+    function hangup() {
+        if (peerConnection) {
+            peerConnection.close();
+            peerConnection = null;
+        }
+        if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+            localStream = null;
+        }
+        if (remoteVideo) remoteVideo.srcObject = null;
+        if (localVideo) localVideo.srcObject = null;
+        callPanel.style.display = 'none';
+        isCallActive = false;
+        setStatus('📴 Звонок завершён. Можно начать новый.', 'waiting');
+    }
+
+    // === НАЗНАЧАЕМ ОБРАБОТЧИКИ ===
+    showIpBtn.onclick = showMyLocalIP;
+    copyIpBtn.onclick = copyLocalIP;
+    connectBtn.onclick = onConnectClick;
+    toggleCameraBtn.onclick = toggleCamera;
+    hangupBtn.onclick = hangup;
+
+    // При загрузке показываем статус
+    setStatus('💡 Нажмите "Показать локальный IP"', 'waiting');
 </script>
 </body>
 </html>
